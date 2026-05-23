@@ -505,6 +505,13 @@ b { color: var(--gold); }
   min-width: 0;
 }
 
+.playerLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
 .rankName small {
   grid-column: 2;
   color: var(--muted);
@@ -513,11 +520,35 @@ b { color: var(--gold); }
   text-transform: uppercase;
 }
 
-.countryFlag {
-  margin-right: 6px;
+.countryBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: max-content;
+  min-height: 22px;
+  padding: 2px 7px 2px 5px;
+  border-radius: 999px;
+  background: rgba(98, 215, 255, .13);
+  border: 1px solid rgba(98, 215, 255, .35);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 1000;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.countryIcon {
   color: inherit;
   font-size: 15px;
+  line-height: 1;
   text-transform: none;
+}
+
+.chatMessage strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .rankLogo,

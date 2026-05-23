@@ -284,7 +284,7 @@ function leaderboardMark(index) {
 
 function playerBadge(player) {
   const tier = rankTier(player);
-  return '<span class="rankName ' + tier.className + '"><span class="rankLogo">' + tier.icon + '</span><span><span class="countryFlag">' + countryFlag(player?.country) + '</span>' + player.username + '</span><small>' + tier.title + '</small></span>';
+  return '<span class="rankName ' + tier.className + '"><span class="rankLogo">' + tier.icon + '</span><span class="playerLine">' + countryBadge(player?.country) + '<span>' + player.username + '</span></span><small>' + tier.title + '</small></span>';
 }
 
 function squareName(row, col) {
@@ -517,7 +517,7 @@ function renderChat() {
     const row = document.createElement('div');
     row.className = 'chatMessage ' + (message.userId === me?.id ? 'mine' : 'theirs');
     const name = document.createElement('strong');
-    name.textContent = countryFlag(message.country) + ' ' + (message.color === 'w' ? 'Putih' : message.color === 'b' ? 'Hitam' : 'Player') + ' - ' + message.username + ' / ' + countryName(message.country);
+    name.innerHTML = countryBadge(message.country) + '<span>' + (message.color === 'w' ? 'Putih' : message.color === 'b' ? 'Hitam' : 'Player') + ' - ' + message.username + ' / ' + countryName(message.country) + '</span>';
     const text = document.createElement('p');
     text.textContent = message.text;
     row.append(name, text);
@@ -527,7 +527,11 @@ function renderChat() {
 }
 
 function playerMeta(player) {
-  return countryFlag(player?.country) + ' ' + countryName(player?.country) + ' - ' + player.elo + ' ELO';
+  return (player?.country || '??') + ' - ' + countryName(player?.country) + ' - ' + player.elo + ' ELO';
+}
+
+function countryBadge(code) {
+  return '<span class="countryBadge"><span class="countryIcon">' + countryFlag(code) + '</span><span>' + (code || '??') + '</span></span>';
 }
 
 function countryFlag(code) {
