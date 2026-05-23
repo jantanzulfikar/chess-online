@@ -19,6 +19,8 @@ const TIME_CONTROL_MS = 10 * 60 * 1000;
 const COUNTRIES = new Set(['ID', 'MY', 'SG', 'PH', 'TH', 'VN', 'US', 'JP', 'KR', 'CN', 'IN', 'BR', 'GB', 'DE', 'FR', 'AU']);
 const BOT_LEVELS = new Set(['easy', 'medium', 'hard']);
 const PIECE_VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
+const CENTER_SQUARES = new Set(['d4', 'e4', 'd5', 'e5']);
+const NEAR_CENTER_SQUARES = new Set(['c3', 'd3', 'e3', 'f3', 'c4', 'f4', 'c5', 'f5', 'c6', 'd6', 'e6', 'f6']);
 
 const rooms = new Map();
 const queue = [];
@@ -497,18 +499,15 @@ function queueSocket(socket) {
 function chooseBotMove(room) {
   const moves = room.game.moves({ verbose: true });
   if (moves.length === 0) return null;
-  if (room.bot.level === 'easy') return randomItem(moves);
-
-  const tactical = moves.filter((move) => move.captured || move.san.includes('+') || move.san.includes('#'));
-  if (room.bot.level === 'medium') return randomItem(tactical.length ? tactical : moves);
-
+  if (room.bot.level === 'easy') return chooseEasyMove(room, moves);
   const botColor = room.bot.color;
+  const depth = room.bot.level === 'hard' ? 3 : 2;
   let bestScore = -Infinity;
   let bestMoves = [];
   for (const move of moves) {
     const game = new Chess(room.game.fen());
     game.move({ from: move.from, to: move.to, promotion: move.promotion || 'q' });
-    const score = evaluateGameFor(game, botColor) + (move.captured ? PIECE_VALUES[move.captured] / 8 : 0);
+    const score = minimax(game, depth - 1, -Infinity, Infinity, botColor);
     if (score > bestScore) {
       bestScore = score;
       bestMoves = [move];
@@ -516,7 +515,55 @@ function chooseBotMove(room) {
       bestMoves.push(move);
     }
   }
-  return randomItem(bestMoves);
+  return randomItem(bestMoves.slice(0, Math.max(1, Math.min(bestMoves.length, 3))));
+}
+
+function chooseEasyMove(room, moves) {
+  const tactical = moves.filter((move) => move.captured || move.san.includes('+'));
+  if (tactical.length && Math.random() < 0.45) return randomItem(tactical);
+  return randomItem(moves);
+}
+
+function minimax(game, depth, alpha, beta, botColor) {
+  if (depth === 0 || game.isGameOver()) return evaluateGameFor(game, botColor);
+  const maximizing = game.turn() === botColor;
+  const moves = orderMoves(game.moves({ verbose: true }));
+  if (maximizing) {
+    let value = -Infinity;
+    for (const move of moves) {
+      const next = new Chess(game.fen());
+      next.move({ from: move.from, to: move.to, promotion: move.promotion || 'q' });
+      value = Math.max(value, minimax(next, depth - 1, alpha, beta, botColor));
+      alpha = Math.max(alpha, value);
+      if (beta <= alpha) break;
+    }
+    return value;
+  }
+
+  let value = Infinity;
+  for (const move of moves) {
+    const next = new Chess(game.fen());
+    next.move({ from: move.from, to: move.to, promotion: move.promotion || 'q' });
+    value = Math.min(value, minimax(next, depth - 1, alpha, beta, botColor));
+    beta = Math.min(beta, value);
+    if (beta <= alpha) break;
+  }
+  return value;
+}
+
+function orderMoves(moves) {
+  return [...moves].sort((a, b) => movePriority(b) - movePriority(a));
+}
+
+function movePriority(move) {
+  let score = 0;
+  if (move.san.includes('#')) score += 100000;
+  if (move.san.includes('+')) score += 900;
+  if (move.captured) score += (PIECE_VALUES[move.captured] || 0) * 3 - (PIECE_VALUES[move.piece] || 0);
+  if (move.promotion) score += PIECE_VALUES[move.promotion] || 0;
+  if (CENTER_SQUARES.has(move.to)) score += 45;
+  if (NEAR_CENTER_SQUARES.has(move.to)) score += 20;
+  return score;
 }
 
 function evaluateGameFor(game, color) {
@@ -527,10 +574,17 @@ function evaluateGameFor(game, color) {
     for (const piece of row) {
       if (!piece) continue;
       const value = PIECE_VALUES[piece.type] || 0;
-      score += piece.color === color ? value : -value;
+      const square = piece.square || '';
+      let positional = 0;
+      if (CENTER_SQUARES.has(square)) positional += 18;
+      if (NEAR_CENTER_SQUARES.has(square)) positional += 8;
+      if (piece.type === 'p') positional += piece.color === 'w' ? (Number(square[1]) - 2) * 6 : (7 - Number(square[1])) * 6;
+      score += piece.color === color ? value + positional : -(value + positional);
     }
   }
-  if (game.inCheck()) score += game.turn() === color ? -35 : 35;
+  const mobility = game.moves().length;
+  score += game.turn() === color ? mobility * 2 : -mobility * 2;
+  if (game.inCheck()) score += game.turn() === color ? -80 : 80;
   return score;
 }
 
