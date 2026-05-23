@@ -864,10 +864,15 @@ b { color: var(--gold); }
 }
 
 .piece.white {
-  color: #ffffff;
-  -webkit-text-stroke: .8px #10161d;
-  text-shadow: 0 1px 0 #10161d, 0 4px 8px rgba(0,0,0,.24);
-  filter: none;
+  color: #fffdf6;
+  -webkit-text-stroke: 1px #20242b;
+  text-shadow:
+    0 1px 0 #20242b,
+    1px 0 0 #20242b,
+    -1px 0 0 #20242b,
+    0 -1px 0 #20242b,
+    0 4px 8px rgba(0,0,0,.28);
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,.75));
 }
 
 .piece.black {
