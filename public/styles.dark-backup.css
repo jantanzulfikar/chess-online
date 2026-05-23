@@ -1,23 +1,23 @@
 :root {
-  color-scheme: light;
-  --bg: #edf5f8;
-  --ink: #152330;
-  --muted: #61717f;
-  --panel: rgba(255, 255, 255, .88);
-  --panel-solid: #ffffff;
-  --panel-2: #f6fafc;
-  --panel-3: #e7eef4;
-  --line: rgba(38, 62, 82, .16);
-  --line-strong: rgba(230, 144, 37, .45);
-  --gold: #d98517;
+  color-scheme: dark;
+  --bg: #080b10;
+  --ink: #f8f0dd;
+  --muted: #a7b2b7;
+  --panel: rgba(17, 23, 31, .88);
+  --panel-solid: #11171f;
+  --panel-2: #182331;
+  --panel-3: #202c3c;
+  --line: rgba(255, 255, 255, .13);
+  --line-strong: rgba(255, 214, 107, .5);
+  --gold: #ffd66b;
   --gold-2: #f6a83d;
-  --cyan: #168bb3;
-  --mint: #229a6b;
-  --red: #d54f45;
-  --violet: #725fd1;
-  --light: #f0d38f;
-  --dark: #876247;
-  --shadow: 0 22px 60px rgba(51, 79, 101, .18);
+  --cyan: #62d7ff;
+  --mint: #6ef0b2;
+  --red: #ef5d5d;
+  --violet: #a790ff;
+  --light: #e8c989;
+  --dark: #5f3f2d;
+  --shadow: 0 24px 80px rgba(0, 0, 0, .45);
 }
 
 * { box-sizing: border-box; }
@@ -31,9 +31,9 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    linear-gradient(120deg, rgba(22, 139, 179, .16), transparent 30%),
-    linear-gradient(245deg, rgba(213, 79, 69, .12), transparent 34%),
-    linear-gradient(180deg, #f8fbfd 0%, #edf5f8 48%, #e4eef4 100%);
+    linear-gradient(120deg, rgba(98, 215, 255, .12), transparent 28%),
+    linear-gradient(245deg, rgba(239, 93, 93, .13), transparent 30%),
+    linear-gradient(180deg, #0b0f16 0%, #10131b 46%, #080b10 100%);
   color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   overflow-x: hidden;
@@ -45,10 +45,10 @@ body::before {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(rgba(28,58,80,.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(28,58,80,.045) 1px, transparent 1px);
+    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
   background-size: 52px 52px;
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,.68), rgba(0,0,0,.2));
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.8), rgba(0,0,0,.22));
 }
 
 button, input, select { font: inherit; }
@@ -79,7 +79,7 @@ button:active { transform: translateY(1px); }
 button.secondary {
   width: 100%;
   margin-top: 16px;
-  background: linear-gradient(180deg, #ffffff, #dfeaf1);
+  background: linear-gradient(180deg, #26364a, #172231);
   color: var(--ink);
   border: 1px solid var(--line);
   box-shadow: inset 0 -2px 0 rgba(0,0,0,.22);
@@ -110,7 +110,7 @@ select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255,255,255,.92);
+  background: #070b10;
   color: var(--ink);
   padding: 12px 13px;
   outline: none;
@@ -154,7 +154,7 @@ select {
   position: absolute;
   right: 7%;
   top: -44px;
-  color: rgba(217, 133, 23, .13);
+  color: rgba(255, 214, 107, .16);
   font-size: clamp(110px, 18vw, 220px);
   line-height: 1;
   transform: rotate(-10deg);
@@ -192,8 +192,8 @@ select {
   gap: 4px;
   padding: 12px;
   background:
-    linear-gradient(180deg, rgba(255,255,255,.72), transparent),
-    rgba(255, 255, 255, .78);
+    linear-gradient(180deg, rgba(255,255,255,.05), transparent),
+    rgba(17, 23, 31, .72);
   border: 1px solid var(--line);
   border-radius: 8px;
 }
@@ -211,7 +211,7 @@ select {
 .matchLoader,
 .resultBox {
   background:
-    linear-gradient(180deg, rgba(255,255,255,.66), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,.045), transparent 28%),
     var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -347,11 +347,11 @@ h2 { font-size: 18px; }
   display: inline-grid;
   place-items: center;
   min-height: 32px;
-  border: 1px solid rgba(22, 139, 179, .3);
-  background: rgba(22, 139, 179, .09);
+  border: 1px solid rgba(98, 215, 255, .35);
+  background: rgba(98, 215, 255, .09);
   border-radius: 999px;
   padding: 6px 11px;
-  color: #0e617e;
+  color: #d8f5ff;
   font-size: 13px;
   font-weight: 900;
   white-space: nowrap;
@@ -370,7 +370,7 @@ h2 { font-size: 18px; }
 .scoreboard > div,
 .leaderboard li {
   background:
-    linear-gradient(180deg, rgba(255,255,255,.7), transparent),
+    linear-gradient(180deg, rgba(255,255,255,.04), transparent),
     var(--panel-2);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -557,7 +557,7 @@ b { color: var(--gold); }
   place-items: center;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: #ffffff;
+  background: #0a0f16;
   border: 1px solid var(--line);
 }
 
@@ -613,11 +613,11 @@ b { color: var(--gold); }
   gap: 10px;
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(217,133,23,.18), transparent 30%),
-    linear-gradient(315deg, rgba(22,139,179,.16), transparent 28%),
-    #f9fcfe;
-  border: 1px solid rgba(38,62,82,.16);
-  box-shadow: 0 26px 70px rgba(51,79,101,.2), inset 0 0 0 1px rgba(255,255,255,.7);
+    linear-gradient(135deg, rgba(255,214,107,.26), transparent 28%),
+    linear-gradient(315deg, rgba(98,215,255,.18), transparent 26%),
+    #121923;
+  border: 1px solid rgba(255,255,255,.16);
+  box-shadow: 0 28px 90px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.05);
 }
 
 .boardWrap::before {
@@ -630,7 +630,7 @@ b { color: var(--gold); }
   place-items: center;
   padding: 0 12px;
   border-radius: 999px;
-  background: #ffffff;
+  background: #090d13;
   border: 1px solid var(--line);
   color: var(--gold);
   font-size: 12px;
@@ -656,8 +656,8 @@ b { color: var(--gold); }
   min-height: 74px;
   padding: 11px 12px;
   background:
-    linear-gradient(180deg, rgba(255,255,255,.72), transparent),
-    rgba(255, 255, 255, .9);
+    linear-gradient(180deg, rgba(255,255,255,.045), transparent),
+    rgba(17, 23, 31, .9);
   border: 1px solid var(--line);
   border-radius: 8px;
 }
@@ -1027,7 +1027,7 @@ b { color: var(--gold); }
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(16, 35, 50, .34);
+  background: rgba(3, 5, 8, .72);
   backdrop-filter: blur(7px);
 }
 
@@ -1064,7 +1064,7 @@ b { color: var(--gold); }
   padding: 0;
   font-size: 42px;
   line-height: 1;
-  background: linear-gradient(180deg, #ffffff, #dfeaf1);
+  background: linear-gradient(180deg, #26364a, #172231);
   color: var(--ink);
   border: 1px solid var(--line);
 }
