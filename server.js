@@ -17,6 +17,8 @@ const START_ELO = 1000;
 const K_FACTOR = 32;
 const TIME_CONTROL_MS = 10 * 60 * 1000;
 const COUNTRIES = new Set(['ID', 'MY', 'SG', 'PH', 'TH', 'VN', 'US', 'JP', 'KR', 'CN', 'IN', 'BR', 'GB', 'DE', 'FR', 'AU']);
+const BOT_LEVELS = new Set(['easy', 'medium', 'hard']);
+const PIECE_VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
 
 const rooms = new Map();
 const queue = [];
@@ -211,10 +213,77 @@ function createRoom(whiteSocket, blackSocket) {
   emitRoom(room);
 }
 
+function botProfile(level) {
+  const names = {
+    easy: ['Bot EZ', 850],
+    medium: ['Bot Medium', 1150],
+    hard: ['Bot Hard', 1450],
+  };
+  const [username, elo] = names[level] || names.easy;
+  return {
+    id: 'bot-' + level,
+    username,
+    country: 'JP',
+    elo,
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    games: 0,
+  };
+}
+
+function createBotRoom(socket, level) {
+  const safeLevel = BOT_LEVELS.has(level) ? level : 'easy';
+  const id = 'bot-' + crypto.randomUUID().slice(0, 8);
+  const room = {
+    id,
+    game: new Chess(),
+    players: {
+      w: socket.id,
+      b: 'bot:' + safeLevel,
+    },
+    userIds: {
+      w: socket.data.user.id,
+      b: 'bot-' + safeLevel,
+    },
+    bot: {
+      color: 'b',
+      level: safeLevel,
+      profile: botProfile(safeLevel),
+    },
+    lastResult: null,
+    rated: false,
+    clocks: {
+      w: TIME_CONTROL_MS,
+      b: TIME_CONTROL_MS,
+    },
+    chat: [{
+      id: crypto.randomUUID().slice(0, 8),
+      userId: 'bot-' + safeLevel,
+      username: botProfile(safeLevel).username,
+      country: 'JP',
+      color: 'b',
+      text: 'Siap. Pilih langkah terbaikmu.',
+      createdAt: Date.now(),
+    }],
+    rematchRequests: [],
+    lastTickAt: Date.now(),
+    createdAt: Date.now(),
+  };
+  rooms.set(id, room);
+  leaveMatch(socket);
+  removeFromQueue(socket);
+  socket.join(id);
+  socket.data.roomId = id;
+  socket.data.color = 'w';
+  socket.emit('role', { color: 'w', roomId: id });
+  emitRoom(room);
+}
+
 function publicRoom(room) {
 	  const now = Date.now();
-	  const white = db.users[room.userIds.w];
-	  const black = db.users[room.userIds.b];
+	  const white = participantUser(room, 'w');
+	  const black = participantUser(room, 'b');
 	  const clocks = currentClocks(room, now);
 	  const history = room.game.history({ verbose: true });
 	  const lastMove = history.at(-1) || null;
@@ -251,6 +320,11 @@ function publicRoom(room) {
     },
 	  };
 	}
+
+function participantUser(room, color) {
+  if (room.bot?.color === color) return room.bot.profile;
+  return db.users[room.userIds[color]];
+}
 
 function capturedPieces(history) {
   const captured = { w: [], b: [] };
@@ -314,6 +388,13 @@ function socketForUser(userId) {
 }
 
 function startRematch(room) {
+  if (room.bot) {
+    const humanColor = room.bot.color === 'w' ? 'b' : 'w';
+    const humanSocket = socketForUser(room.userIds[humanColor]);
+    if (!humanSocket) return false;
+    createBotRoom(humanSocket, room.bot.level);
+    return true;
+  }
   const whiteSocket = socketForUser(room.userIds.w);
   const blackSocket = socketForUser(room.userIds.b);
   if (!whiteSocket || !blackSocket) return false;
@@ -323,6 +404,14 @@ function startRematch(room) {
 
 function finalizeRoom(room) {
   if (!room.lastResult || room.rated) return;
+  if (room.bot) {
+    room.rated = true;
+    room.lastResult.players = {
+      w: publicUser(participantUser(room, 'w')),
+      b: publicUser(participantUser(room, 'b')),
+    };
+    return;
+  }
   const white = db.users[room.userIds.w];
   const black = db.users[room.userIds.b];
   if (!white || !black) return;
@@ -358,6 +447,9 @@ function leaveMatch(socket) {
   if (!socket.data.roomId) return;
   const room = rooms.get(socket.data.roomId);
   if (room) socket.leave(room.id);
+  if (room?.bot && room.userIds[socket.data.color] === socket.data.user?.id && !room.lastResult) {
+    rooms.delete(room.id);
+  }
   socket.data.roomId = null;
   socket.data.color = 'spectator';
 }
@@ -400,6 +492,70 @@ function queueSocket(socket) {
   socket.emit('matchmaking', { queued: false });
   opponent.emit('matchmaking', { queued: false });
   io.emit('queueSize', queue.length);
+}
+
+function chooseBotMove(room) {
+  const moves = room.game.moves({ verbose: true });
+  if (moves.length === 0) return null;
+  if (room.bot.level === 'easy') return randomItem(moves);
+
+  const tactical = moves.filter((move) => move.captured || move.san.includes('+') || move.san.includes('#'));
+  if (room.bot.level === 'medium') return randomItem(tactical.length ? tactical : moves);
+
+  const botColor = room.bot.color;
+  let bestScore = -Infinity;
+  let bestMoves = [];
+  for (const move of moves) {
+    const game = new Chess(room.game.fen());
+    game.move({ from: move.from, to: move.to, promotion: move.promotion || 'q' });
+    const score = evaluateGameFor(game, botColor) + (move.captured ? PIECE_VALUES[move.captured] / 8 : 0);
+    if (score > bestScore) {
+      bestScore = score;
+      bestMoves = [move];
+    } else if (score === bestScore) {
+      bestMoves.push(move);
+    }
+  }
+  return randomItem(bestMoves);
+}
+
+function evaluateGameFor(game, color) {
+  if (game.isCheckmate()) return game.turn() === color ? -100000 : 100000;
+  if (game.isDraw()) return 0;
+  let score = 0;
+  for (const row of game.board()) {
+    for (const piece of row) {
+      if (!piece) continue;
+      const value = PIECE_VALUES[piece.type] || 0;
+      score += piece.color === color ? value : -value;
+    }
+  }
+  if (game.inCheck()) score += game.turn() === color ? -35 : 35;
+  return score;
+}
+
+function randomItem(items) {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+function maybeBotMove(room) {
+  if (!room.bot || room.lastResult || room.game.isGameOver()) return;
+  if (room.game.turn() !== room.bot.color) return;
+  setTimeout(() => {
+    if (!rooms.has(room.id) || room.lastResult || room.game.isGameOver()) return;
+    if (room.game.turn() !== room.bot.color) return;
+    if (updateClock(room)) {
+      emitRoom(room);
+      return;
+    }
+    const move = chooseBotMove(room);
+    if (!move) return;
+    room.game.move({ from: move.from, to: move.to, promotion: move.promotion || 'q' });
+    room.lastTickAt = Date.now();
+    room.lastResult = resultFor(room);
+    finalizeRoom(room);
+    emitRoom(room);
+  }, 650);
 }
 
 function activeRoomForUser(userId) {
@@ -452,6 +608,11 @@ io.on('connection', (socket) => {
   socket.on('findMatch', () => {
     leaveMatch(socket);
     queueSocket(socket);
+  });
+
+  socket.on('playBot', (level) => {
+    createBotRoom(socket, String(level || 'easy'));
+    io.emit('queueSize', queue.length);
   });
 
   socket.on('cancelMatch', () => {
@@ -509,6 +670,7 @@ io.on('connection', (socket) => {
 	      room.lastResult = resultFor(room);
 	      finalizeRoom(room);
 	      emitRoom(room);
+      maybeBotMove(room);
     } catch {
       socket.emit('invalidMove');
     }

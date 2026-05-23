@@ -70,6 +70,7 @@ const chatStatus = document.querySelector('#chatStatus');
 const chatList = document.querySelector('#chatList');
 const chatForm = document.querySelector('#chatForm');
 const chatInput = document.querySelector('#chatInput');
+const botButtons = document.querySelectorAll('.botBtn');
 
 const pieces = {
   wp: '♙', wr: '♖', wn: '♘', wb: '♗', wq: '♕', wk: '♔',
@@ -823,6 +824,12 @@ logoutBtn.addEventListener('click', logout);
 findMatchBtn.addEventListener('click', () => {
   initAudio();
   if (socket) socket.emit('findMatch');
+});
+botButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    initAudio();
+    if (socket) socket.emit('playBot', button.dataset.level);
+  });
 });
 cancelMatchBtn.addEventListener('click', () => socket && socket.emit('cancelMatch'));
 overlayCancelBtn.addEventListener('click', () => socket && socket.emit('cancelMatch'));
