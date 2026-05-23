@@ -482,8 +482,10 @@ b { color: var(--gold); }
   line-height: 1;
 }
 
-#whiteCard::before { content: "♔"; }
-#blackCard::before { content: "♚"; }
+#whiteCard::before,
+#blackCard::before {
+  content: none;
+}
 
 .scoreboard em {
   position: absolute;
@@ -660,7 +662,7 @@ b { color: var(--gold); }
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(96px, auto) auto;
   gap: 12px;
-  align-items: center;
+  align-items: end;
   min-height: 74px;
   padding: 11px 12px;
   background:
@@ -674,6 +676,7 @@ b { color: var(--gold); }
   display: grid;
   gap: 3px;
   min-width: 0;
+  align-self: end;
 }
 
 .boardPlayer strong {
@@ -687,6 +690,7 @@ b { color: var(--gold); }
 }
 
 .boardPlayer em {
+  align-self: end;
   color: var(--ink);
   font-style: normal;
   font-size: clamp(22px, 3vw, 32px);
@@ -708,6 +712,7 @@ b { color: var(--gold); }
 }
 
 .capturedPieces {
+  align-self: end;
   min-height: 34px;
   display: flex;
   justify-content: flex-end;
