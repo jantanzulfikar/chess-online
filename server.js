@@ -17,10 +17,78 @@ const START_ELO = 1000;
 const K_FACTOR = 32;
 const TIME_CONTROL_MS = 10 * 60 * 1000;
 const COUNTRIES = new Set(['ID', 'MY', 'SG', 'PH', 'TH', 'VN', 'US', 'JP', 'KR', 'CN', 'IN', 'BR', 'GB', 'DE', 'FR', 'AU']);
-const BOT_LEVELS = new Set(['easy', 'medium', 'hard']);
+const BOT_LEVELS = new Set(['easy', 'medium', 'hard', 'master']);
 const PIECE_VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
 const CENTER_SQUARES = new Set(['d4', 'e4', 'd5', 'e5']);
 const NEAR_CENTER_SQUARES = new Set(['c3', 'd3', 'e3', 'f3', 'c4', 'f4', 'c5', 'f5', 'c6', 'd6', 'e6', 'f6']);
+const BOT_CONFIG = {
+  easy: { depth: 0, topMoves: 6 },
+  medium: { depth: 2, topMoves: 2 },
+  hard: { depth: 3, topMoves: 1 },
+  master: { depth: 4, topMoves: 1 },
+};
+const PIECE_SQUARE_TABLES = {
+  p: [
+    0, 0, 0, 0, 0, 0, 0, 0,
+    50, 50, 50, 50, 50, 50, 50, 50,
+    10, 10, 20, 32, 32, 20, 10, 10,
+    5, 5, 12, 28, 28, 12, 5, 5,
+    0, 0, 0, 22, 22, 0, 0, 0,
+    5, -5, -10, 0, 0, -10, -5, 5,
+    5, 10, 10, -24, -24, 10, 10, 5,
+    0, 0, 0, 0, 0, 0, 0, 0,
+  ],
+  n: [
+    -50, -40, -30, -30, -30, -30, -40, -50,
+    -40, -20, 0, 5, 5, 0, -20, -40,
+    -30, 5, 18, 22, 22, 18, 5, -30,
+    -30, 0, 22, 32, 32, 22, 0, -30,
+    -30, 5, 22, 32, 32, 22, 5, -30,
+    -30, 0, 18, 22, 22, 18, 0, -30,
+    -40, -20, 0, 0, 0, 0, -20, -40,
+    -50, -40, -30, -30, -30, -30, -40, -50,
+  ],
+  b: [
+    -20, -10, -10, -10, -10, -10, -10, -20,
+    -10, 8, 0, 0, 0, 0, 8, -10,
+    -10, 12, 12, 14, 14, 12, 12, -10,
+    -10, 0, 14, 18, 18, 14, 0, -10,
+    -10, 5, 14, 18, 18, 14, 5, -10,
+    -10, 0, 12, 14, 14, 12, 0, -10,
+    -10, 0, 0, 0, 0, 0, 0, -10,
+    -20, -10, -10, -10, -10, -10, -10, -20,
+  ],
+  r: [
+    0, 0, 0, 8, 8, 0, 0, 0,
+    5, 10, 10, 10, 10, 10, 10, 5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    0, 0, 0, 8, 8, 0, 0, 0,
+  ],
+  q: [
+    -20, -10, -10, -5, -5, -10, -10, -20,
+    -10, 0, 0, 0, 0, 0, 0, -10,
+    -10, 0, 8, 8, 8, 8, 0, -10,
+    -5, 0, 8, 12, 12, 8, 0, -5,
+    0, 0, 8, 12, 12, 8, 0, -5,
+    -10, 8, 8, 8, 8, 8, 0, -10,
+    -10, 0, 8, 0, 0, 0, 0, -10,
+    -20, -10, -10, -5, -5, -10, -10, -20,
+  ],
+  k: [
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -20, -30, -30, -40, -40, -30, -30, -20,
+    -10, -20, -20, -20, -20, -20, -20, -10,
+    20, 20, 0, 0, 0, 0, 20, 20,
+    20, 30, 10, 0, 0, 10, 30, 20,
+  ],
+};
 
 const rooms = new Map();
 const queue = [];
@@ -220,6 +288,7 @@ function botProfile(level) {
     easy: ['Bot EZ', 850],
     medium: ['Bot Medium', 1150],
     hard: ['Bot Hard', 1450],
+    master: ['Bot Master', 1750],
   };
   const [username, elo] = names[level] || names.easy;
   return {
@@ -501,10 +570,11 @@ function chooseBotMove(room) {
   if (moves.length === 0) return null;
   if (room.bot.level === 'easy') return chooseEasyMove(room, moves);
   const botColor = room.bot.color;
-  const depth = room.bot.level === 'hard' ? 3 : 2;
+  const config = BOT_CONFIG[room.bot.level] || BOT_CONFIG.medium;
+  const depth = config.depth;
   let bestScore = -Infinity;
   let bestMoves = [];
-  for (const move of moves) {
+  for (const move of orderMoves(moves)) {
     const game = new Chess(room.game.fen());
     game.move({ from: move.from, to: move.to, promotion: move.promotion || 'q' });
     const score = minimax(game, depth - 1, -Infinity, Infinity, botColor);
@@ -515,7 +585,8 @@ function chooseBotMove(room) {
       bestMoves.push(move);
     }
   }
-  return randomItem(bestMoves.slice(0, Math.max(1, Math.min(bestMoves.length, 3))));
+  const candidateCount = Math.max(1, Math.min(bestMoves.length, config.topMoves));
+  return randomItem(bestMoves.slice(0, candidateCount));
 }
 
 function chooseEasyMove(room, moves) {
@@ -575,10 +646,9 @@ function evaluateGameFor(game, color) {
       if (!piece) continue;
       const value = PIECE_VALUES[piece.type] || 0;
       const square = piece.square || '';
-      let positional = 0;
+      let positional = positionalScore(piece, square);
       if (CENTER_SQUARES.has(square)) positional += 18;
       if (NEAR_CENTER_SQUARES.has(square)) positional += 8;
-      if (piece.type === 'p') positional += piece.color === 'w' ? (Number(square[1]) - 2) * 6 : (7 - Number(square[1])) * 6;
       score += piece.color === color ? value + positional : -(value + positional);
     }
   }
@@ -586,6 +656,17 @@ function evaluateGameFor(game, color) {
   score += game.turn() === color ? mobility * 2 : -mobility * 2;
   if (game.inCheck()) score += game.turn() === color ? -80 : 80;
   return score;
+}
+
+function positionalScore(piece, square) {
+  const table = PIECE_SQUARE_TABLES[piece.type];
+  if (!table || !square) return 0;
+  const file = square.charCodeAt(0) - 97;
+  const rank = Number(square[1]) - 1;
+  if (file < 0 || file > 7 || rank < 0 || rank > 7) return 0;
+  const whiteIndex = (7 - rank) * 8 + file;
+  const blackIndex = rank * 8 + file;
+  return table[piece.color === 'w' ? whiteIndex : blackIndex] || 0;
 }
 
 function randomItem(items) {
