@@ -339,6 +339,14 @@ function emitRoom(room) {
   io.emit('leaderboard', leaderboardPayload());
 }
 
+function emitOnlineCount() {
+  const onlineUsers = new Set();
+  for (const socket of io.sockets.sockets.values()) {
+    if (socket.data.user?.id) onlineUsers.add(socket.data.user.id);
+  }
+  io.emit('onlineCount', onlineUsers.size);
+}
+
 function leaderboardPayload() {
   return Object.values(db.users)
     .map(publicUser)
@@ -438,6 +446,7 @@ io.on('connection', (socket) => {
   socket.emit('me', publicUser(socket.data.user));
   socket.emit('leaderboard', leaderboardPayload());
   socket.emit('queueSize', queue.length);
+  emitOnlineCount();
   rejoinActiveRoom(socket);
 
   socket.on('findMatch', () => {
@@ -524,6 +533,7 @@ io.on('connection', (socket) => {
     removeFromQueue(socket);
     socketsByUser.delete(socket.data.user.id);
     io.emit('queueSize', queue.length);
+    emitOnlineCount();
   });
 	});
 

@@ -38,9 +38,7 @@ const logoutBtn = document.querySelector('#logoutBtn');
 const findMatchBtn = document.querySelector('#findMatchBtn');
 const cancelMatchBtn = document.querySelector('#cancelMatchBtn');
 const resignBtn = document.querySelector('#resignBtn');
-const queueText = document.querySelector('#queueText');
-const turnText = document.querySelector('#turnText');
-const gameText = document.querySelector('#gameText');
+const onlineText = document.querySelector('#onlineText');
 const whiteName = document.querySelector('#whiteName');
 const blackName = document.querySelector('#blackName');
 const whiteScore = document.querySelector('#whiteScore');
@@ -51,7 +49,6 @@ const whiteCard = document.querySelector('#whiteCard');
 const blackCard = document.querySelector('#blackCard');
 const whiteCaptured = document.querySelector('#whiteCaptured');
 const blackCaptured = document.querySelector('#blackCaptured');
-const lastMoveText = document.querySelector('#lastMoveText');
 const moveList = document.querySelector('#moveList');
 const leaderboardList = document.querySelector('#leaderboardList');
 const roomLabel = document.querySelector('#roomLabel');
@@ -205,10 +202,13 @@ function connect() {
 	  });
   socket.on('leaderboard', renderLeaderboard);
   socket.on('queueSize', (size) => {
-    queueText.textContent = size + (size === 1 ? ' player' : ' players');
+    roleBadge.dataset.queue = String(size);
+  });
+  socket.on('onlineCount', (size) => {
+    onlineText.textContent = size + (size === 1 ? ' player' : ' players');
   });
   socket.on('matchmaking', ({ queued }) => {
-    gameText.textContent = queued ? 'Mencari lawan...' : 'Queue dibatalkan';
+    roleBadge.textContent = queued ? 'Mencari lawan' : myColor === 'w' ? 'Putih' : myColor === 'b' ? 'Hitam' : 'Online';
     matchOverlay.classList.toggle('hidden', !queued);
   });
   socket.on('invalidMove', () => {
@@ -247,9 +247,7 @@ function logout() {
   roleBadge.textContent = 'Offline';
   profileName.textContent = '-';
 	  profileElo.textContent = '-';
-	  gameText.textContent = 'Login dulu';
-	  turnText.textContent = '-';
-	  lastMoveText.textContent = '-';
+	  onlineText.textContent = '0 player';
 	  whiteClock.textContent = '10:00';
 	  blackClock.textContent = '10:00';
 	  whiteCard.classList.remove('activeClock', 'lowClock');
@@ -477,8 +475,7 @@ function renderPanel() {
 	  if (!state) return;
 	  roomLabel.textContent = state.id;
 	  const turnName = state.turn === 'w' ? 'Putih' : 'Hitam';
-	  turnText.textContent = state.result ? '-' : turnName + ' jalan';
-	  lastMoveText.textContent = state.lastMove ? state.lastMove.san + ' (' + state.lastMove.from + '-' + state.lastMove.to + ')' : '-';
+    roleBadge.textContent = state.result ? 'Game Over' : turnName + ' jalan';
 	
 	  whiteName.innerHTML = playerBadge(state.players.w);
 	  blackName.innerHTML = playerBadge(state.players.b);
@@ -488,16 +485,15 @@ function renderPanel() {
 	  renderClocks();
 	
 	  if (state.result) {
-	    gameText.textContent = state.result.text;
     if (state.result.players) {
       if (me && state.result.players.w.id === me.id) me = state.result.players.w;
       if (me && state.result.players.b.id === me.id) me = state.result.players.b;
       renderProfile();
     }
 	  } else if (state.isCheck) {
-	    gameText.textContent = 'Check - ' + turnName + ' harus jalan';
+	    roleBadge.textContent = 'Check - ' + turnName;
 	  } else {
-	    gameText.textContent = turnName + ' jalan';
+	    roleBadge.textContent = turnName + ' jalan';
 	  }
 
   moveList.innerHTML = '';
