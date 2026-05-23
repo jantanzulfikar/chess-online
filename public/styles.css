@@ -836,6 +836,7 @@ b { color: var(--gold); }
   position: absolute;
   line-height: 1;
   font-size: clamp(36px, 7.5vw, 74px);
+  font-family: "DejaVu Serif", "Noto Sans Symbols 2", "Segoe UI Symbol", "Times New Roman", serif;
   text-shadow: 0 5px 8px rgba(0,0,0,.38);
   transform: translateY(-1px);
   transition: transform .14s ease, filter .14s ease;
@@ -864,15 +865,19 @@ b { color: var(--gold); }
 }
 
 .piece.white {
-  color: #fffdf6;
-  -webkit-text-stroke: 1px #20242b;
+  color: #ffffff;
+  -webkit-text-stroke: 0;
   text-shadow:
-    0 1px 0 #20242b,
-    1px 0 0 #20242b,
-    -1px 0 0 #20242b,
-    0 -1px 0 #20242b,
-    0 4px 8px rgba(0,0,0,.28);
-  filter: drop-shadow(0 1px 0 rgba(255,255,255,.75));
+    -1px -1px 0 #111820,
+    0 -1px 0 #111820,
+    1px -1px 0 #111820,
+    -1px 0 0 #111820,
+    1px 0 0 #111820,
+    -1px 1px 0 #111820,
+    0 1px 0 #111820,
+    1px 1px 0 #111820,
+    0 4px 8px rgba(0,0,0,.24);
+  filter: drop-shadow(0 0 2px rgba(255,255,255,.9));
 }
 
 .piece.black {
