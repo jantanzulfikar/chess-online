@@ -75,6 +75,16 @@ const pieces = {
   wp: '♙', wr: '♖', wn: '♘', wb: '♗', wq: '♕', wk: '♔',
   bp: '♟', br: '♜', bn: '♞', bb: '♝', bq: '♛', bk: '♚',
 };
+const initialBoard = [
+  [{ color: 'b', type: 'r' }, { color: 'b', type: 'n' }, { color: 'b', type: 'b' }, { color: 'b', type: 'q' }, { color: 'b', type: 'k' }, { color: 'b', type: 'b' }, { color: 'b', type: 'n' }, { color: 'b', type: 'r' }],
+  Array.from({ length: 8 }, () => ({ color: 'b', type: 'p' })),
+  Array(8).fill(null),
+  Array(8).fill(null),
+  Array(8).fill(null),
+  Array(8).fill(null),
+  Array.from({ length: 8 }, () => ({ color: 'w', type: 'p' })),
+  [{ color: 'w', type: 'r' }, { color: 'w', type: 'n' }, { color: 'w', type: 'b' }, { color: 'w', type: 'q' }, { color: 'w', type: 'k' }, { color: 'w', type: 'b' }, { color: 'w', type: 'n' }, { color: 'w', type: 'r' }],
+];
 const capturedSymbols = {
   w: { p: '♙', r: '♖', n: '♘', b: '♗', q: '♕' },
   b: { p: '♟', r: '♜', n: '♞', b: '♝', q: '♛' },
@@ -230,6 +240,7 @@ function showGame() {
   gameView.classList.remove('hidden');
   registerForm.classList.add('hidden');
   authForm.classList.remove('hidden');
+  if (!state) renderBoard();
 }
 
 function logout() {
@@ -252,7 +263,7 @@ function logout() {
 	  blackClock.textContent = '10:00';
 	  whiteCard.classList.remove('activeClock', 'lowClock');
 	  blackCard.classList.remove('activeClock', 'lowClock');
-	  boardEl.innerHTML = '';
+	  renderBoard();
 	  matchOverlay.classList.add('hidden');
 	}
 
@@ -301,11 +312,11 @@ function orientedSquare(row, col) {
 
 function renderBoard() {
   boardEl.innerHTML = '';
-  if (!state) return;
-  boardEl.classList.toggle('whiteTurn', state.turn === 'w' && !state.result);
-  boardEl.classList.toggle('blackTurn', state.turn === 'b' && !state.result);
+  const board = state?.board || initialBoard;
+  boardEl.classList.toggle('whiteTurn', Boolean(state && state.turn === 'w' && !state.result));
+  boardEl.classList.toggle('blackTurn', Boolean(state && state.turn === 'b' && !state.result));
 
-  orientedBoard(state.board).forEach((row, rowIndex) => {
+  orientedBoard(board).forEach((row, rowIndex) => {
     row.forEach((piece, colIndex) => {
       const square = document.createElement('button');
       const name = orientedSquare(rowIndex, colIndex);
@@ -314,14 +325,14 @@ function renderBoard() {
       square.className = 'square ' + ((rowIndex + colIndex) % 2 === 0 ? 'light' : 'dark');
 	      if (selected === name) square.classList.add('selected');
 	      if (legalTargets.has(name)) square.classList.add('legal');
-	      if (state.lastMove?.from === name) square.classList.add('lastMove', 'lastMoveFrom');
-	      if (state.lastMove?.to === name) square.classList.add('lastMove', 'lastMoveTo');
-      if (piece && !state.result && piece.color === state.turn) square.classList.add('turnPiece');
+	      if (state?.lastMove?.from === name) square.classList.add('lastMove', 'lastMoveFrom');
+	      if (state?.lastMove?.to === name) square.classList.add('lastMove', 'lastMoveTo');
+      if (piece && state && !state.result && piece.color === state.turn) square.classList.add('turnPiece');
 
       if (piece) {
         const pieceEl = document.createElement('span');
         pieceEl.className = 'piece ' + (piece.color === 'w' ? 'white' : 'black');
-        if (piece.color === myColor && state.turn === myColor && !state.isGameOver) {
+        if (state && piece.color === myColor && state.turn === myColor && !state.isGameOver) {
           pieceEl.classList.add('draggablePiece');
         }
         pieceEl.textContent = pieces[piece.color + piece.type];
