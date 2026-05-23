@@ -1,0 +1,19 @@
+{
+  "name": "Catur Wars",
+  "short_name": "Catur Wars",
+  "description": "Game catur online ranked dengan bot, chat, dan rematch.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#5dbdff",
+  "theme_color": "#5dbdff",
+  "icons": [
+    {
+      "src": "/icons/catur-wars.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
